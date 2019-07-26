@@ -82,7 +82,6 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
     function build(): Store<T> {
         const _watchers: WatchCallback<T>[] = []
         const _initializedServices: { [key: string]: any } = {}
-        const _watchGetters: { [key: string]: WatchCallback<T>[] } = {}
 
         Object.keys(_factories).map(k => _initializedServices[k] = _factories[k](_config))
 
