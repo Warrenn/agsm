@@ -1,11 +1,22 @@
 {
-  "name": "agsm-store",
-  "version": "0.0.1",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC"
+    "name": "agsm-store",
+    "version": "0.0.1",
+    "description": "",
+    "main": "index.js",
+    "types": "./src/index.d.ts",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "generate-barrels": "barrelsby --delete"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "@types/node": "^12.6.8",
+        "@types/typescript": "^2.0.0",
+        "jest": "^24.8.0"
+    },
+    "devDependencies": {
+        "barrelsby": "^2.1.1",
+        "typescript": "^3.5.3"
+    }
 }

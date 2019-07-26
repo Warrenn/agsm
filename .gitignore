@@ -89,3 +89,4 @@ typings/
 
 # Merge conflict files
 *.orig
+*.DS_Store
