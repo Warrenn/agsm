@@ -5,10 +5,15 @@ export interface ExampleState {
     collection: any[]
 }
 
+export interface ExampleState {
+    more: boolean
+}
+
 export const exampleModule = <ModuleDeclaration<ExampleState>>{
     initialState: {
         collection: [],
-        loading: false
+        loading: false,
+        more: false
     },
     asyncs: {
         "Call Service": async ({ factory, state, value, dispatch }) => {
@@ -37,4 +42,4 @@ export const exampleModule = <ModuleDeclaration<ExampleState>>{
             state.collection = value
         }
     }
-} 
+}

@@ -26,11 +26,11 @@ export declare type MiddleWareCallback<T> = (context: MiddlewareContext<T>) => P
 export declare type FactoryDeclaration = (config: any) => any
 
 export interface ModuleDeclaration<T> {
-    transforms: { [key: string]: TransformCallback<T> }
-    asyncs: { [key: string]: MiddleWareCallback<T> }
-    middlewares: MiddleWareCallback<T>[]
-    factories: { [key: string]: FactoryDeclaration }
-    initialState: T
+    transforms?: { [key: string]: TransformCallback<T> }
+    asyncs?: { [key: string]: MiddleWareCallback<T> }
+    middlewares?: MiddleWareCallback<T>[]
+    factories?: { [key: string]: FactoryDeclaration }
+    initialState?: T
 }
 
 export interface StoreBuilder<T> {
