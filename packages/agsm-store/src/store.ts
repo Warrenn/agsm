@@ -80,18 +80,10 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
     }
 
     function build(): Store<T> {
-        let _currentWatchers: WatchCallback<T>[] = []
-        let _nextWatchers: WatchCallback<T>[] = _currentWatchers
-        let _isDispatching: boolean = false
+        let _watchers: WatchCallback<T>[] = []
         let _initializedServices: { [key: string]: any } = {}
 
         Object.keys(_factories).map(k => _initializedServices[k] = _factories[k](_config))
-
-        function ensureCanMutateNextWatchers() {
-            if (_nextWatchers === _currentWatchers) {
-                _nextWatchers = _currentWatchers.slice()
-            }
-        }
 
         async function dispatch(actionNs: string, value: any): Promise<void> {
             if (!actionNs) throw "The action must be provided for dispatch"
@@ -111,25 +103,16 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
                     throw `the service for ${key} could not be found`
                 }
             }
-
-            if (_isDispatching)
-                throw new Error('may not dispatch actions while transforming')
-
-            _isDispatching = true
             let rootState = deepCopy(_state["__"] || {})
             let state: T = <T>deepCopy(_state[nsKey] || {})
+            
+            const transContext = <TransformContext<T>>{ state, action: actionNs, value, rootState }
+            transforms.map(t => t(transContext))
 
-            try {
-                const transContext = <TransformContext<T>>{ state, action: actionNs, value, rootState }
-                transforms.map(t => t(transContext))
-            }
-            finally {
-                _isDispatching = false
-            }
             _state["__"] = deepCopy(rootState)
             _state[nsKey] = <T>deepCopy(state)
 
-            const watchers: WatchCallback<T>[] = (_currentWatchers = _nextWatchers)
+            const watchers: WatchCallback<T>[] = _watchers.slice()
             watchers.map(w => w({ state, rootState }))
 
             const _children: { key: string, value: any }[] = []
@@ -147,35 +130,15 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
         }
 
         function watch(callback: WatchCallback<T>): () => void {
-
-            if (_isDispatching) {
-                throw new Error(
-                    'You may not call store.watch() while transformers are executing. '
-                )
-            }
-
             let isSubscribed = true
-
-            ensureCanMutateNextWatchers()
-            _nextWatchers.push(callback)
+            _watchers.push(callback)
 
             return (): void => {
-                if (!isSubscribed) {
-                    return
-                }
-
-                if (_isDispatching) {
-                    throw new Error(
-                        'You may not unsubscribe from a store watcher while executing. '
-                    )
-                }
+                if (!isSubscribed) return
 
                 isSubscribed = false
-
-                ensureCanMutateNextWatchers()
-                const index = _nextWatchers.indexOf(callback)
-                _nextWatchers.splice(index, 1)
-                _currentWatchers = null
+                const index = _watchers.indexOf(callback)
+                _watchers.splice(index, 1)
             }
         }
 
