@@ -8,4 +8,4 @@ export const exampleStore = createStoreBuilder<AnotherState | ExampleState>()
     .addConfig({
         timeout: 2000,
         userTimer: 2000
-    })
+    }).build().watch(({ state }) => (<AnotherState>state).user)

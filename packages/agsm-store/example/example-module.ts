@@ -1,6 +1,6 @@
 import { ModuleDeclaration } from '../src/index'
 
-export interface ExampleState {
+export type ExampleState = {
     loading: boolean,
     collection: any[]
 }

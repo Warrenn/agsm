@@ -1,6 +1,6 @@
 import { ModuleDeclaration } from '../src/index'
 
-export interface AnotherState {
+export type AnotherState = {
     user: {
         name: string
         uniqueId: string
