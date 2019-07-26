@@ -1,4 +1,4 @@
-import { ModuleDeclaration, TransformCallback, MiddleWareCallback, FactoryDeclaration, StoreBuilder, Store, WatchCallback, TransformContext, MiddlewareContext, ServiceFactory } from './index'
+import { ModuleDeclaration, TransformCallback, MiddleWareCallback, FactoryDeclaration, StoreBuilder, Store, WatchCallback, TransformContext, MiddlewareContext, ServiceFactory, GetterCallback } from './index'
 import { deepCopy } from './utils/utils'
 
 export function createStoreBuilder<T>(): StoreBuilder<T> {
@@ -73,7 +73,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
         return this
     }
 
-    function addFactory(key: string, factory: FactoryDeclaration, namespace?: string) {
+    function addFactory(key: string, factory: FactoryDeclaration, namespace?: string): StoreBuilder<T> {
         if (namespace) key = `${namespace}:${key}`
         _factories[key] = factory
         return this
@@ -82,6 +82,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
     function build(): Store<T> {
         const _watchers: WatchCallback<T>[] = []
         const _initializedServices: { [key: string]: any } = {}
+        const _watchGetters: { [key: string]: WatchCallback<T>[] } = {}
 
         Object.keys(_factories).map(k => _initializedServices[k] = _factories[k](_config))
 
@@ -103,13 +104,13 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
                     throw `the service for ${key} could not be found`
                 }
             }
-            let rootState = deepCopy(_state["__"] || {})
+            let rootState: T = <T>deepCopy(_state["__"] || {})
             let state: T = <T>deepCopy(_state[nsKey] || {})
-            
+
             const transContext = <TransformContext<T>>{ state, action: actionNs, value, rootState }
             transforms.map(t => t(transContext))
 
-            _state["__"] = deepCopy(rootState)
+            _state["__"] = <T>deepCopy(rootState)
             _state[nsKey] = <T>deepCopy(state)
 
             const watchers: WatchCallback<T>[] = _watchers.slice()

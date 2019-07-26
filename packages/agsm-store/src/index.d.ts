@@ -16,12 +16,18 @@ export interface MiddlewareContext<T> {
     state: T
     value: any
     context: any
-    rootState: any
+    rootState: T
     factory: ServiceFactory
     dispatch: DispatchCallback
 }
 
+export interface WatchCallbackContext<T> {
+    state: T
+    rootState: T
+}
+
 export declare type TransformCallback<T> = (context: TransformContext<T>) => void
+export declare type GetterCallback<T> = (state: T) => any
 export declare type MiddleWareCallback<T> = (context: MiddlewareContext<T>) => Promise<void>
 export declare type FactoryDeclaration = (config: any) => any
 
@@ -44,7 +50,7 @@ export interface StoreBuilder<T> {
     build: () => Store<T>
 }
 
-export declare type WatchCallback<T> = ({ state: T, rootState: any }) => void
+export declare type WatchCallback<T> = (context: WatchCallbackContext<T>) => void
 
 export interface Store<T> {
     watch: (callback: WatchCallback<T>) => () => void

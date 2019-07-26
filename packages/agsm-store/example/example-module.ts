@@ -5,10 +5,6 @@ export interface ExampleState {
     collection: any[]
 }
 
-export interface ExampleState {
-    more: boolean
-}
-
 export const exampleModule = <ModuleDeclaration<ExampleState>>{
     initialState: {
         collection: [],
