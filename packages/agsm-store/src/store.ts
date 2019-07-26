@@ -3,8 +3,8 @@ import { deepCopy } from './utils/utils'
 
 export function createStoreBuilder<T>(): StoreBuilder<T> {
     let _transforms: { [key: string]: TransformCallback<T>[] } = {}
-    let _asyncs: { [key: string]: MiddleWareCallback[] } = {}
-    let _middlewares: { [key: string]: MiddleWareCallback[] } = {}
+    let _asyncs: { [key: string]: MiddleWareCallback<T>[] } = {}
+    let _middlewares: { [key: string]: MiddleWareCallback<T>[] } = {}
     let _factories: { [key: string]: FactoryDeclaration } = {}
     let _state: { [key: string]: any } = {}
     let _config: any = {}
@@ -41,7 +41,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
         return this
     }
 
-    function addMiddleware(callback: MiddleWareCallback, namespace?: string): StoreBuilder<T> {
+    function addMiddleware(callback: MiddleWareCallback<T>, namespace?: string): StoreBuilder<T> {
         let midKey = namespace || "__"
         _middlewares[midKey] = _middlewares[midKey] || []
         _middlewares[midKey].push(callback)
@@ -55,7 +55,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
         return this
     }
 
-    function addAsync(key: string, callback: MiddleWareCallback, namespace?: string): StoreBuilder<T> {
+    function addAsync(key: string, callback: MiddleWareCallback<T>, namespace?: string): StoreBuilder<T> {
         if (namespace) key = `${namespace}:${key}`
         _asyncs[key] = _asyncs[key] || []
         _asyncs[key].push(callback)
@@ -80,8 +80,8 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
     }
 
     function build(): Store<T> {
-        let _watchers: WatchCallback<T>[] = []
-        let _initializedServices: { [key: string]: any } = {}
+        const _watchers: WatchCallback<T>[] = []
+        const _initializedServices: { [key: string]: any } = {}
 
         Object.keys(_factories).map(k => _initializedServices[k] = _factories[k](_config))
 
@@ -94,7 +94,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
 
             const nsKey = namespace || "__"
             const transforms: TransformCallback<T>[] = _transforms[actionNs] || []
-            const middlewares: MiddleWareCallback[] = [...(_asyncs[actionNs] || []), ...(_middlewares[nsKey] || [])] || []
+            const middlewares: MiddleWareCallback<T>[] = [...(_asyncs[actionNs] || []), ...(_middlewares[nsKey] || [])] || []
 
             const factory = <ServiceFactory>{
                 createService: (key: string) => {
@@ -121,7 +121,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
                 else _children.push({ key: `${namespace}:${act}`, value })
             }
 
-            const midContext = <MiddlewareContext>{ state, rootState, value, context: _config, factory, dispatch: _dispatch, action: actionNs }
+            const midContext = <MiddlewareContext<T>>{ state, rootState, value, context: _config, factory, dispatch: _dispatch, action: actionNs }
             const promises = middlewares.map(m => m(midContext))
             await Promise.all(promises)
             for (let i = 0; i < _children.length; i++) {
