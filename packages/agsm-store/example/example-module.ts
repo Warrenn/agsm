@@ -11,16 +11,6 @@ export const exampleModule = <ModuleDeclaration<ExampleState>>{
         loading: false,
         more: false
     },
-    asyncs: {
-        "Call Service": async ({ factory, state, value, dispatch }) => {
-            const service = factory.createService("service")
-            const data = await service.fetch(value, state)
-            await dispatch("Service Returned", data)
-        }
-    },
-    middlewares: [
-        async ({ action, value }) => console.log(`[${action}] ${value}`)
-    ],
     factories: {
         "service": (config: any) => {
             return {
@@ -31,7 +21,15 @@ export const exampleModule = <ModuleDeclaration<ExampleState>>{
             }
         }
     },
+    asyncs: {
+        "Call Service": async ({ factory, state, value, dispatch }) => {
+            const service = factory.createService("service")
+            const data = await service.fetch(value, state)
+            await dispatch("Service Returned", data)
+        }
+    },
     transforms: {
+        "*:*": ({ action, value }) => console.log(`[${action}] ${JSON.stringify(value)}`),
         "Call Service": ({ state }) => state.loading = true,
         "Service Returned": ({ state, value }) => {
             state.loading = false

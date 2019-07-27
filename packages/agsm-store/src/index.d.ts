@@ -11,7 +11,7 @@ export interface ServiceFactory {
 
 export declare type DispatchCallback = (action: string, value: any, root?: boolean) => Promise<void>
 
-export interface MiddlewareContext<T> {
+export interface AsyncContext<T> {
     action: string
     state: T
     value: any
@@ -27,23 +27,20 @@ export interface WatchCallbackContext<T> {
 }
 
 export declare type TransformCallback<T> = (context: TransformContext<T>) => void
-export declare type GetterCallback<T> = (state: T) => any
-export declare type MiddleWareCallback<T> = (context: MiddlewareContext<T>) => Promise<void>
+export declare type AsyncCallback<T> = (context: AsyncContext<T>) => Promise<void>
 export declare type FactoryDeclaration = (config: any) => any
 
 export interface ModuleDeclaration<T> {
     transforms?: { [key: string]: TransformCallback<T> }
-    asyncs?: { [key: string]: MiddleWareCallback<T> }
-    middlewares?: MiddleWareCallback<T>[]
+    asyncs?: { [key: string]: AsyncCallback<T> }
     factories?: { [key: string]: FactoryDeclaration }
     initialState?: T
 }
 
 export interface StoreBuilder<T> {
     addModule: (declaration: ModuleDeclaration<T>, namespace?: string) => StoreBuilder<T>
-    addMiddleware: (callback: MiddleWareCallback<T>, namespace?: string) => StoreBuilder<T>
     addTransform: (key: string, callback: TransformCallback<T>, namespace?: string) => StoreBuilder<T>
-    addAsync: (key: string, callback: MiddleWareCallback<T>, namespace?: string) => StoreBuilder<T>
+    addAsync: (key: string, callback: AsyncCallback<T>, namespace?: string) => StoreBuilder<T>
     initialState: (initialState: any, namespace?: string) => StoreBuilder<T>
     addConfig: (config: any) => StoreBuilder<T>
     addFactory: (key: string, factory: FactoryDeclaration, namespace?: string) => StoreBuilder<T>

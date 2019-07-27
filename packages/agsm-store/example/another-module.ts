@@ -9,13 +9,6 @@ export type AnotherState = {
 }
 
 export const anotherModule = <ModuleDeclaration<AnotherState>>{
-    asyncs: {
-        "get user": async ({ factory, dispatch }) => {
-            const service = factory.createService("userservice")
-            const data = await service.getUser()
-            await dispatch("found user", data)
-        }
-    },
     factories: {
         "userservice": (config) => {
             return {
@@ -24,6 +17,13 @@ export const anotherModule = <ModuleDeclaration<AnotherState>>{
                     window.setTimeout(() => r({ name: "anonymous", uniqueId: "veryuniqe" }), config.userTimer)
                 })
             }
+        }
+    },
+    asyncs: {
+        "get user": async ({ factory, dispatch }) => {
+            const service = factory.createService("userservice")
+            const data = await service.getUser()
+            await dispatch("found user", data)
         }
     },
     transforms: {

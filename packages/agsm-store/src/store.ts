@@ -1,62 +1,47 @@
-import { ModuleDeclaration, TransformCallback, MiddleWareCallback, FactoryDeclaration, StoreBuilder, Store, WatchCallback, TransformContext, MiddlewareContext, ServiceFactory, GetterCallback } from './index'
+import { ModuleDeclaration, TransformCallback, AsyncCallback, FactoryDeclaration, StoreBuilder, Store, WatchCallback, TransformContext, AsyncContext, ServiceFactory } from './index'
 import { deepCopy } from './utils/utils'
 
 export function createStoreBuilder<T>(): StoreBuilder<T> {
     let _transforms: { [key: string]: TransformCallback<T>[] } = {}
-    let _asyncs: { [key: string]: MiddleWareCallback<T>[] } = {}
-    let _middlewares: { [key: string]: MiddleWareCallback<T>[] } = {}
+    let _asyncs: { [key: string]: AsyncCallback<T>[] } = {}
     let _factories: { [key: string]: FactoryDeclaration } = {}
     let _state: { [key: string]: any } = {}
     let _config: any = {}
 
     function addModule(declaration: ModuleDeclaration<T>, namespace?: string): StoreBuilder<T> {
-        const nsKey = namespace || "__"
+        const stateKey = namespace || "__"
         if (namespace) namespace = `${namespace}:`
         else namespace = ""
 
-        if (declaration.transforms) Object
-            .keys(declaration.transforms)
+        let concatCallbacks = (existingCallbacks: any, newCallbacks: any) => Object
+            .keys(newCallbacks)
             .map(k => {
-                let key = `${namespace}${k}`
-                _transforms[key] = _transforms[key] || []
-                _transforms[key].push(declaration.transforms[k])
+                let key = (k === "*:*") ? "*:*" : `${namespace}${k}`
+                existingCallbacks[key] = existingCallbacks[key] || []
+                existingCallbacks[key].push(newCallbacks[k])
             })
 
-        if (declaration.asyncs) Object
-            .keys(declaration.asyncs)
-            .map(k => {
-                let key = `${namespace}${k}`
-                _asyncs[key] = _asyncs[key] || []
-                _asyncs[key].push(declaration.asyncs[k])
-            })
-
-        _middlewares[nsKey] = [...(_middlewares[nsKey] || []), ...declaration.middlewares]
+        if (declaration.transforms) concatCallbacks(_transforms, declaration.transforms)
+        if (declaration.asyncs) concatCallbacks(_asyncs, declaration.asyncs)
 
         if (declaration.factories) Object
             .keys(declaration.factories)
             .map(k => _factories[`${namespace}${k}`] = declaration.factories[k])
 
-        _state[nsKey] = { ...(_state[nsKey] || {}), ...declaration.initialState }
+        _state[stateKey] = { ...(_state[stateKey] || {}), ...declaration.initialState }
 
-        return this
-    }
-
-    function addMiddleware(callback: MiddleWareCallback<T>, namespace?: string): StoreBuilder<T> {
-        let midKey = namespace || "__"
-        _middlewares[midKey] = _middlewares[midKey] || []
-        _middlewares[midKey].push(callback)
         return this
     }
 
     function addTransform(key: string, callback: TransformCallback<T>, namespace?: string): StoreBuilder<T> {
-        if (namespace) key = `${namespace}:${key}`
+        if (namespace && key !== "*:*") key = `${namespace}:${key}`
         _transforms[key] = _transforms[key] || []
         _transforms[key].push(callback)
         return this
     }
 
-    function addAsync(key: string, callback: MiddleWareCallback<T>, namespace?: string): StoreBuilder<T> {
-        if (namespace) key = `${namespace}:${key}`
+    function addAsync(key: string, callback: AsyncCallback<T>, namespace?: string): StoreBuilder<T> {
+        if (namespace && key !== "*:*") key = `${namespace}:${key}`
         _asyncs[key] = _asyncs[key] || []
         _asyncs[key].push(callback)
         return this
@@ -89,12 +74,16 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
             if (!actionNs) throw "The action must be provided for dispatch"
 
             let namespace = ""
+            let allMatches = "*"
             const split = actionNs.split(":")
-            if (split.length > 1) namespace = split[0]
+            if (split.length > 1) {
+                namespace = split[0]
+                allMatches = `${namespace}:*`
+            }
 
             const nsKey = namespace || "__"
-            const transforms: TransformCallback<T>[] = _transforms[actionNs] || []
-            const middlewares: MiddleWareCallback<T>[] = [...(_asyncs[actionNs] || []), ...(_middlewares[nsKey] || [])] || []
+            const transforms: TransformCallback<T>[] = [...(_transforms[actionNs] || []), ...(_transforms[allMatches] || []), ...(_transforms["*:*"] || [])] || []
+            const asyncs: AsyncCallback<T>[] = [...(_asyncs[actionNs] || []), ...(_asyncs[allMatches] || []), ...(_asyncs["*:*"] || [])] || []
 
             const factory = <ServiceFactory>{
                 createService: (key: string) => {
@@ -121,10 +110,8 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
                 else _children.push({ key: `${namespace}:${act}`, value })
             }
 
-            const midContext = <MiddlewareContext<T>>{ state, rootState, value, context: _config, factory, dispatch: _dispatch, action: actionNs }
-            const promises = middlewares
-                .filter(m => !!m)
-                .map(m => m(midContext))
+            const asyncContext = <AsyncContext<T>>{ state, rootState, value, context: _config, factory, dispatch: _dispatch, action: actionNs }
+            const promises = asyncs.filter(m => !!m).map(m => m(asyncContext))
 
             await Promise.all(promises)
             for (let i = 0; i < _children.length; i++) {
@@ -153,7 +140,6 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
 
     return <StoreBuilder<T>>{
         addModule,
-        addMiddleware,
         addTransform,
         initialState,
         addAsync,
