@@ -2,10 +2,10 @@ import { ModuleDeclaration, TransformCallback, AsyncCallback, FactoryDeclaration
 import { deepCopy } from './utils/utils'
 
 export function createStoreBuilder<T>(): StoreBuilder<T> {
-    let _transforms: { [key: string]: TransformCallback<T>[] } = {}
-    let _asyncs: { [key: string]: AsyncCallback<T>[] } = {}
-    let _factories: { [key: string]: FactoryDeclaration } = {}
-    let _state: { [key: string]: any } = {}
+    const _transforms: { [key: string]: TransformCallback<T>[] } = {}
+    const _asyncs: { [key: string]: AsyncCallback<T>[] } = {}
+    const _factories: { [key: string]: FactoryDeclaration } = {}
+    const _state: { [key: string]: any } = {}
     let _config: any = {}
 
     function addModule(declaration: ModuleDeclaration<T>, namespace?: string): StoreBuilder<T> {
@@ -101,8 +101,10 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
             _state["__"] = <T>deepCopy(rootState)
             _state[nsKey] = <T>deepCopy(state)
 
-            const watchers: WatchCallback<T>[] = _watchers.slice()
-            watchers.map(w => w && w({ state, rootState }))
+            if (transforms.length > 0) {
+                const watchers: WatchCallback<T>[] = _watchers.slice()
+                watchers.map(w => w && w({ state, rootState }))
+            }
 
             const _children: { key: string, value: any }[] = []
             const _dispatch = (act: string, value: any, root?: boolean) => {
