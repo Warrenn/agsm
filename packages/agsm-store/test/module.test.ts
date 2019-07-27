@@ -16,6 +16,5 @@ test('doing a test', async () => {
   store.watch(({ state }) => ss = state)
   await store.dispatch("Call Service", { "service": 123 })
 
-  console.log(JSON.stringify(ss))
   expect((<ExampleState>ss).collection.length).toBe(2)
 })

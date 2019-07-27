@@ -107,13 +107,13 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
             let state: T = <T>deepCopy(_state[nsKey] || {})
 
             const transContext = <TransformContext<T>>{ state, action: actionNs, value, rootState }
-            transforms.map(t => t(transContext))
+            transforms.map(t => t && t(transContext))
 
             _state["__"] = <T>deepCopy(rootState)
             _state[nsKey] = <T>deepCopy(state)
 
             const watchers: WatchCallback<T>[] = _watchers.slice()
-            watchers.filter(f => !!f).map(w => w({ state, rootState }))
+            watchers.map(w => w && w({ state, rootState }))
 
             const _children: { key: string, value: any }[] = []
             const _dispatch = (act: string, value: any, root?: boolean) => {
@@ -122,8 +122,10 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
             }
 
             const midContext = <MiddlewareContext<T>>{ state, rootState, value, context: _config, factory, dispatch: _dispatch, action: actionNs }
-            console.log(middlewares)
-            const promises = middlewares.filter(m => !!m).map(m => m(midContext))
+            const promises = middlewares
+                .filter(m => !!m)
+                .map(m => m(midContext))
+
             await Promise.all(promises)
             for (let i = 0; i < _children.length; i++) {
                 await dispatch(_children[i].key, _children[i].value)
