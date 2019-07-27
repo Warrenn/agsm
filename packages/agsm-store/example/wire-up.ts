@@ -5,7 +5,4 @@ import { createStoreBuilder } from '../src/store'
 export const exampleStore = createStoreBuilder<ExampleState | AnotherState>()
     .addModule(anotherModule)
     .addModule(exampleModule)
-    .addConfig({
-        timeout: 2000,
-        userTimer: 2000
-    })
+    .addConfig({ baseUrl: 'https://example/' })

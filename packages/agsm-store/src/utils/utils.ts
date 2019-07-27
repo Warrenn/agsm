@@ -19,7 +19,7 @@ export function find (list, f) {
  * @param {Array<Object>} cache
  * @return {*}
  */
-export function deepCopy (obj, cache = []) {
+export function deepCopy (obj, cache: any[] = []) {
   // just return if obj is immutable value
   if (obj === null || typeof obj !== 'object') {
     return obj

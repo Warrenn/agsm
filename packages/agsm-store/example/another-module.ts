@@ -1,4 +1,4 @@
-import { ModuleDeclaration } from '../src/index'
+import { ModuleDeclaration } from '../src'
 
 export type AnotherState = {
     user: {
@@ -12,10 +12,11 @@ export const anotherModule = <ModuleDeclaration<AnotherState>>{
     factories: {
         "userservice": (config) => {
             return {
-                getUser: () => new Promise((r, x) => {
-                    if (config.userTimer) x('no user timer')
-                    window.setTimeout(() => r({ name: "anonymous", uniqueId: "veryuniqe" }), config.userTimer)
-                })
+                getUser: async () => {
+                    let response = await fetch(`${config.baseUrl}getUser`)
+                    let data = response.json()
+                    return data
+                }
             }
         }
     },

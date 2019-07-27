@@ -1,4 +1,4 @@
-import { ModuleDeclaration, TransformCallback, AsyncCallback, FactoryDeclaration, StoreBuilder, Store, WatchCallback, TransformContext, AsyncContext, ServiceFactory } from './index'
+import { ModuleDeclaration, TransformCallback, AsyncCallback, FactoryDeclaration, StoreBuilder, Store, WatchCallback, TransformContext, AsyncContext, ServiceFactory } from './index.d'
 import { deepCopy } from './utils/utils'
 
 export function createStoreBuilder<T>(): StoreBuilder<T> {
@@ -9,6 +9,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
     let _config: any = {}
 
     function addModule(declaration: ModuleDeclaration<T>, namespace?: string): StoreBuilder<T> {
+        if (!declaration) throw ''
         const stateKey = namespace || "__"
         if (namespace) namespace = `${namespace}:`
         else namespace = ""
@@ -24,9 +25,8 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
         if (declaration.transforms) concatCallbacks(_transforms, declaration.transforms)
         if (declaration.asyncs) concatCallbacks(_asyncs, declaration.asyncs)
 
-        if (declaration.factories) Object
-            .keys(declaration.factories)
-            .map(k => _factories[`${namespace}${k}`] = declaration.factories[k])
+        const factories = declaration.factories || {}
+        Object.keys(factories).map(k => _factories[`${namespace}${k}`] = factories[k])
 
         _state[stateKey] = { ...(_state[stateKey] || {}), ...declaration.initialState }
 

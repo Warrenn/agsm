@@ -1,4 +1,4 @@
-import { ModuleDeclaration } from '../src/index'
+import { ModuleDeclaration } from '../src'
 
 export type ExampleState = {
     loading: boolean,
@@ -14,10 +14,14 @@ export const exampleModule = <ModuleDeclaration<ExampleState>>{
     factories: {
         "service": (config: any) => {
             return {
-                fetch: async (value: any, state: ExampleState) => await new Promise((res, rej) => {
-                    if (!config.timeout) rej("no timeout set")
-                    else window.setTimeout(() => res([value, state]), config.timeout)
-                })
+                fetch: async ({ value, state }) => {
+                    let response = await fetch(`${config.baseUrl}getService`, {
+                        headers: state.headers,
+                        body: JSON.stringify(value)
+                    })
+                    let data = response.json()
+                    return data
+                }
             }
         }
     },
