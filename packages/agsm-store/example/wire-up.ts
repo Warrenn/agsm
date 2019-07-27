@@ -2,10 +2,10 @@ import { ExampleState, exampleModule } from './example-module'
 import { AnotherState, anotherModule } from './another-module'
 import { createStoreBuilder } from '../src/store'
 
-export const exampleStore = createStoreBuilder<AnotherState | ExampleState>()
-    .addModule(exampleModule)
+export const exampleStore = createStoreBuilder<ExampleState | AnotherState>()
     .addModule(anotherModule)
+    .addModule(exampleModule)
     .addConfig({
         timeout: 2000,
         userTimer: 2000
-    }).build().watch(({ state }) => (<AnotherState>state).user)
+    })

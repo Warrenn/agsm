@@ -33,7 +33,7 @@ export const exampleModule = <ModuleDeclaration<ExampleState>>{
     },
     transforms: {
         "Call Service": ({ state }) => state.loading = true,
-        "service Returned": ({ state, value }) => {
+        "Service Returned": ({ state, value }) => {
             state.loading = false
             state.collection = value
         }
