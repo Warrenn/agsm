@@ -96,14 +96,16 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
             let state: T = <T>deepCopy(_state[nsKey] || {})
 
             const transContext = <TransformContext<T>>{ state, action: actionNs, value, rootState }
-            transforms.map(t => t && t(transContext))
+            try { transforms.map(t => t && t(transContext)) }
+            catch (error) { try { dispatch("$$ERROR", error) } catch (inner) { console.error(inner) } }
 
             _state["__"] = <T>deepCopy(rootState)
             _state[nsKey] = <T>deepCopy(state)
 
             if (transforms.length > 0) {
                 const watchers: WatchCallback<T>[] = _watchers.slice()
-                watchers.map(w => w && w({ state, rootState }))
+                try { watchers.map(w => w && w({ state, rootState })) }
+                catch (error) { try { dispatch("$$ERROR", error) } catch (inner) { console.error(inner) } }
             }
 
             const _children: { key: string, value: any }[] = []
@@ -117,7 +119,8 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
 
             await Promise.all(promises)
             for (let i = 0; i < _children.length; i++) {
-                await dispatch(_children[i].key, _children[i].value)
+                try { await dispatch(_children[i].key, _children[i].value) }
+                catch (error) { try { dispatch("$$ERROR", error) } catch (inner) { console.error(inner) } }
             }
         }
 
