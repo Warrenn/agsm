@@ -13,9 +13,7 @@
     "license": "ISC",
     "dependencies": {
         "@types/node": "^12.6.8",
-        "@types/typescript": "^2.0.0",
-        "jest-puppeteer": "^4.3.0",
-        "rollup-jest": "0.0.2"
+        "@types/typescript": "^2.0.0"
     },
     "devDependencies": {
         "@types/jest": "^24.0.15",
@@ -26,6 +24,7 @@
         "typescript": "^3.5.3"
     },
     "jest": {
+        "testEnvironment": "node",
         "preset": "rollup-jest",
         "automock": false,
         "setupFiles": []
