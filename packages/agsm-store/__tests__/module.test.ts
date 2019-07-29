@@ -62,3 +62,83 @@ test("*.* must be used for all actions regardless of namespace", async () => {
   }, ["namespace:unkown", "unknown:do"], "namespace", 2)
 
 })
+
+test("an exception in the transform must dispatch an $$ERROR action", async () => {
+  let errorTransformValue: Error = new Error("not this value")
+  let errorState: any = {}
+  const errorTransform = jest.fn(({ value, state }) => {
+    errorTransformValue = value
+    errorState = state
+  })
+  const store = createStoreBuilder().addModule(
+    <ModuleDeclaration<TestState>>{
+      transforms: {
+        "throwError": () => { throw new Error("Error") },
+        "$$ERROR": errorTransform
+      },
+      "initialState": <TestState>{
+        data: "data"
+      }
+    }
+  ).build()
+
+  await store.dispatch("throwError", { v: "value" })
+
+  expect(errorTransform.mock.calls.length).toBe(1)
+
+  expect(errorState.data).toBe("data")
+  expect(errorTransformValue.message).toBe("Error")
+})
+test("an exception in the async must dispatch an $$ERROR action", async () => {
+  let errorTransformValue: Error = new Error("not this value")
+  let errorState: any = {}
+  const errorAsync = jest.fn(async ({ value, state }) => {
+    errorTransformValue = value
+    errorState = state
+  })
+  const store = createStoreBuilder().addModule(
+    <ModuleDeclaration<TestState>>{
+      asyncs: {
+        "throwError": async () => { throw new Error("Error") },
+        "$$ERROR": errorAsync
+      },
+      "initialState": <TestState>{
+        data: "data"
+      }
+    }
+  ).build()
+
+  await store.dispatch("throwError", { v: "value" })
+
+  expect(errorAsync.mock.calls.length).toBe(1)
+
+  expect(errorState.data).toBe("data")
+  expect(errorTransformValue.message).toBe("Error")
+
+})
+test("an exception in the watch must dispatch an $$ERROR action", async () => {
+  let errorTransformValue: Error = new Error("not this value")
+  let errorState: any = {}
+  const errorTransform = jest.fn(({ value, state }) => {
+    errorTransformValue = value
+    errorState = state
+  })
+  const store = createStoreBuilder().addModule(
+    <ModuleDeclaration<TestState>>{
+      transforms: {
+        "throwError": ({ value, state }) => {state.data = value},
+        "$$ERROR": errorTransform
+      }
+    }
+  ).build()
+
+  await store.dispatch("throwError", { v: "value" })
+  store.watch(() => { throw new Error("Error") })
+
+  expect(errorTransform.mock.calls.length).toBe(1)
+
+  expect(errorState.data.v).toBe("value")
+  expect(errorTransformValue.message).toBe("Error")
+
+})
+test("a dispatched exception must occur on the root regardless of namespace", async () => { })
