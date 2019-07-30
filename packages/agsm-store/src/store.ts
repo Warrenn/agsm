@@ -64,22 +64,37 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
         return this
     }
 
+    async function wrapTryCatch(callback: () => void, dispatch: (actionNs: string, value: any, root?: boolean) => Promise<void>) {
+        try { callback() }
+        catch (error) {
+            try {
+                await dispatch("$$ERROR", error, true)
+            }
+            catch (inner) {
+                console.error(inner)
+            }
+        }
+    }
+
     function build(): Store<T> {
         const _watchers: WatchCallback<T>[] = []
         const _initializedServices: { [key: string]: any } = {}
 
         Object.keys(_factories).map(k => _initializedServices[k] = _factories[k](_config))
 
-        async function dispatch(actionNs: string, value: any): Promise<void> {
+        async function dispatch(actionNs: string, value: any, root?: boolean): Promise<void> {
             if (!actionNs) throw "The action must be provided for dispatch"
 
             let namespace = ""
             let allMatches = "*"
             const split = actionNs.split(":")
-            if (split.length > 1) {
-                namespace = split[0]
+
+            if (!root && split.length > 1) {
+                namespace = split[(split.length - 2)]
                 allMatches = `${namespace}:*`
+                actionNs = `${namespace}:${split[split.length - 1]}`
             }
+            if (root) actionNs = split[split.length - 1]
 
             const nsKey = namespace || "__"
             const transforms: TransformCallback<T>[] = [...(_transforms[actionNs] || []), ...(_transforms[allMatches] || []), ...(_transforms["*:*"] || [])] || []
@@ -96,22 +111,20 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
             let state: T = <T>deepCopy(_state[nsKey] || {})
 
             const transContext = <TransformContext<T>>{ state, action: actionNs, value, rootState }
-            try { transforms.map(t => t && t(transContext)) }
-            catch (error) { try { dispatch("$$ERROR", error) } catch (inner) { console.error(inner) } }
+            await wrapTryCatch(() => transforms.map(t => t && t(transContext)), dispatch)
 
             _state["__"] = <T>deepCopy(rootState)
             _state[nsKey] = <T>deepCopy(state)
 
             if (transforms.length > 0) {
                 const watchers: WatchCallback<T>[] = _watchers.slice()
-                try { watchers.map(w => w && w({ state, rootState })) }
-                catch (error) { try { dispatch("$$ERROR", error) } catch (inner) { console.error(inner) } }
+                await wrapTryCatch(() => watchers.map(w => w && w({ state, rootState })), dispatch)
             }
 
-            const _children: { key: string, value: any }[] = []
+            const _children: { key: string, value: any, root?: boolean }[] = []
             const _dispatch = (act: string, value: any, root?: boolean) => {
-                if (root || !namespace) _children.push({ key: act, value })
-                else _children.push({ key: `${namespace}:${act}`, value })
+                if (root || !namespace) _children.push({ key: act, value, root })
+                else _children.push({ key: `${namespace}:${act}`, value, root })
             }
 
             const asyncContext = <AsyncContext<T>>{ state, rootState, value, context: _config, factory, dispatch: _dispatch, action: actionNs }
@@ -119,8 +132,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
 
             await Promise.all(promises)
             for (let i = 0; i < _children.length; i++) {
-                try { await dispatch(_children[i].key, _children[i].value) }
-                catch (error) { try { dispatch("$$ERROR", error) } catch (inner) { console.error(inner) } }
+                await wrapTryCatch(async () => await dispatch(_children[i].key, _children[i].value, _children[i].root), dispatch)
             }
         }
 
