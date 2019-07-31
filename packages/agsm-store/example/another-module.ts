@@ -29,19 +29,16 @@ export const anotherModule = <ModuleDeclaration<AnotherState>>{
         }
     },
     middlewares: [
-        next => async ({ factory, state, namespace, action, dispatch }) => {
+        next => async (context) => {
             try {
-                await next()
+                await next(context)
             }
             catch (error) {
-                dispatch("$$ERROR$$", error)
+                await context.dispatch("$$ERROR$$", error)
             }
-        },
-        next => async ({ factory }) => {
-            window.setTimeout(async () => await next(), 1000)
         }
     ],
-    error: ({ factory, state, error }) => {
+    error: ({ context, value, rootState, factory, state, error }) => {
         console.error(error.stack)
     },
     transforms: {
