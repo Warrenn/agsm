@@ -64,18 +64,6 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
         return this
     }
 
-    async function wrapTryCatch(callback: () => void, dispatch: (actionNs: string, value: any, root?: boolean) => Promise<void>) {
-        try { callback() }
-        catch (error) {
-            try {
-                await dispatch("$$ERROR", error, true)
-            }
-            catch (inner) {
-                console.error(inner)
-            }
-        }
-    }
-
     function build(): Store<T> {
         const _watchers: WatchCallback<T>[] = []
         const _initializedServices: { [key: string]: any } = {}
@@ -111,14 +99,14 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
             let state: T = <T>deepCopy(_state[nsKey] || {})
 
             const transContext = <TransformContext<T>>{ state, action: actionNs, value, rootState }
-            await wrapTryCatch(() => transforms.map(t => t && t(transContext)), dispatch)
+            transforms.map(t => t && t(transContext))
 
             _state["__"] = <T>deepCopy(rootState)
             _state[nsKey] = <T>deepCopy(state)
 
             if (transforms.length > 0) {
                 const watchers: WatchCallback<T>[] = _watchers.slice()
-                await wrapTryCatch(() => watchers.map(w => w && w({ state, rootState })), dispatch)
+                watchers.map(w => w && w({ state, rootState }))
             }
 
             const _children: { key: string, value: any, root?: boolean }[] = []
@@ -132,7 +120,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
 
             await Promise.all(promises)
             for (let i = 0; i < _children.length; i++) {
-                await wrapTryCatch(async () => await dispatch(_children[i].key, _children[i].value, _children[i].root), dispatch)
+                await dispatch(_children[i].key, _children[i].value, _children[i].root)
             }
         }
 
