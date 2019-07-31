@@ -6,6 +6,7 @@ export type AnotherState = {
         uniqueId: string
     },
     loadingUser: boolean
+    message: string
 }
 
 export const anotherModule = <ModuleDeclaration<AnotherState>>{
@@ -27,11 +28,28 @@ export const anotherModule = <ModuleDeclaration<AnotherState>>{
             await dispatch("found user", data)
         }
     },
+    middlewares: [
+        next => async ({ factory, state, namespace, action, dispatch }) => {
+            try {
+                await next()
+            }
+            catch (error) {
+                dispatch("$$ERROR$$", error)
+            }
+        },
+        next => async ({ factory }) => {
+            window.setTimeout(async () => await next(), 1000)
+        }
+    ],
+    error: ({ factory, state, error }) => {
+        console.error(error.stack)
+    },
     transforms: {
         "get user": ({ state }) => state.loadingUser = true,
         "found user": ({ state, value }) => {
             state.loadingUser = false
             state.user = value
         }
-    }
+    },
+
 }

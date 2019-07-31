@@ -33,7 +33,6 @@ export interface ErrorContext<T> {
     context: any
     rootState: T
     factory: ServiceFactory
-    dispatch: DispatchCallback
 }
 
 export declare type TransformCallback<T> = (context: TransformContext<T>) => void
@@ -56,7 +55,7 @@ export interface StoreBuilder<T> {
     initialState: (initialState: any, namespace?: string) => StoreBuilder<T>
     addConfig: (config: any) => StoreBuilder<T>
     addFactory: (key: string, factory: FactoryDeclaration, namespace?: string) => StoreBuilder<T>
-    addErrorHandler: (handler: ErrorDeclaration<T>)=>StoreBuilder<T>
+    addErrorHandler: (handler: ErrorDeclaration<T>) => StoreBuilder<T>
     build: () => Store<T>
 }
 

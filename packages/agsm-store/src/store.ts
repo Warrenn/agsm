@@ -1,4 +1,4 @@
-import { ModuleDeclaration, TransformCallback, AsyncCallback, FactoryDeclaration, StoreBuilder, Store, WatchCallback, TransformContext, AsyncContext, ServiceFactory } from './index.d'
+import { ModuleDeclaration, TransformCallback, AsyncCallback, FactoryDeclaration, StoreBuilder, Store, WatchCallback, TransformContext, AsyncContext, ServiceFactory, ErrorDeclaration, ErrorContext } from './index.d'
 import { deepCopy } from './utils/utils'
 
 export function createStoreBuilder<T>(): StoreBuilder<T> {
@@ -6,7 +6,21 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
     const _asyncs: { [key: string]: AsyncCallback<T>[] } = {}
     const _factories: { [key: string]: FactoryDeclaration } = {}
     const _state: { [key: string]: any } = {}
+    let _errorHandler: ErrorDeclaration<T> = (context: ErrorContext<T>) => console.error(`${JSON.stringify({
+        context: context.context,
+        state: context.state,
+        rootState: context.rootState,
+        value: context.value,
+        error: {
+            name: context.error.name,
+            message: context.error.message,
+            stack: context.error.stack
+        }
+    })}`)
     let _config: any = {}
+    const _wrapTryCatchMiddleWare = next => ({ value, state, rootState, factory, context }) => {
+        try { next() } catch (error) { _errorHandler({ value, state, rootState, factory, error, context }) }
+    }
 
     function addModule(declaration: ModuleDeclaration<T>, namespace?: string): StoreBuilder<T> {
         if (!declaration) throw ''
@@ -64,6 +78,11 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
         return this
     }
 
+    function addErrorHandler(handler: ErrorDeclaration<T>): StoreBuilder<T> {
+        _errorHandler = handler
+        return this
+    }
+
     function build(): Store<T> {
         const _watchers: WatchCallback<T>[] = []
         const _initializedServices: { [key: string]: any } = {}
@@ -99,14 +118,16 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
             let state: T = <T>deepCopy(_state[nsKey] || {})
 
             const transContext = <TransformContext<T>>{ state, action: actionNs, value, rootState }
-            transforms.map(t => t && t(transContext))
+            try { transforms.map(t => t && t(transContext)) }
+            catch (error) { _errorHandler({ rootState, value, state, factory, error, context: _config }) }
 
             _state["__"] = <T>deepCopy(rootState)
             _state[nsKey] = <T>deepCopy(state)
 
-            if (transforms.length > 0) {
+            if (_watchers.length > 0) {
                 const watchers: WatchCallback<T>[] = _watchers.slice()
-                watchers.map(w => w && w({ state, rootState }))
+                try { watchers.map(w => w && w({ state, rootState })) }
+                catch (error) { _errorHandler({ rootState, value, state, factory, error, context: _config }) }
             }
 
             const _children: { key: string, value: any, root?: boolean }[] = []
@@ -117,6 +138,10 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
 
             const asyncContext = <AsyncContext<T>>{ state, rootState, value, context: _config, factory, dispatch: _dispatch, action: actionNs }
             const promises = asyncs.filter(m => !!m).map(m => m(asyncContext))
+            //TODO: combine the wrap try catch as outer most middleware
+            //TODO: combine the call promises as the inner most middleware
+            //TODO: reduce the middlewares
+            //TODO: call middleware function
 
             await Promise.all(promises)
             for (let i = 0; i < _children.length; i++) {
@@ -150,6 +175,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
         addAsync,
         addConfig,
         build,
-        addFactory
+        addFactory,
+        addErrorHandler
     }
 }
