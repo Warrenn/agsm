@@ -5,7 +5,7 @@ type TestState = {
   data: any
 }
 
-async function testStore(callback: (a: any, t: any) => ModuleDeclaration<TestState>, actions: string[], ns?: string, c?: number) {
+async function testStore(callback: (a: any, t: any) => ModuleDeclaration<TestState>, actions: string[], ns?: string, c?: number, root?: boolean) {
   c = c || 1
   let valueAsync: any = {}
   let valueTransform: any = {}
@@ -22,7 +22,7 @@ async function testStore(callback: (a: any, t: any) => ModuleDeclaration<TestSta
 
   store.watch(testWatch)
   for (let action of actions)
-    await store.dispatch(action, { v: "value" })
+    await store.dispatch(action, { v: "value" }, root)
 
   expect(testAsync.mock.calls.length).toBe(c)
   expect(testTransform.mock.calls.length).toBe(c)
@@ -63,20 +63,23 @@ test("*.* must be used for all actions regardless of namespace", async () => {
 
 })
 
-test("an exception in the transform must dispatch an $$ERROR action", async () => {
-  let errorTransformValue: Error = new Error("not this value")
+test("an exception in the transform must be caught by the error handler", async () => {
+  let errorTransformValue: any = {}
   let errorState: any = {}
-  const errorTransform = jest.fn(({ value, state }) => {
+  let errorCheck: Error = new Error
+
+  const errorTransform = jest.fn(({ value, state, error }) => {
+    errorCheck = error
     errorTransformValue = value
     errorState = state
   })
   const store = createStoreBuilder().addModule(
     <ModuleDeclaration<TestState>>{
       transforms: {
-        "throwError": () => { throw new Error("Error") },
-        "$$ERROR": errorTransform
+        "throwError": () => { throw new Error("Error") }
       },
-      "initialState": <TestState>{
+      error: errorTransform,
+      initialState: <TestState>{
         data: "data"
       }
     }
@@ -85,24 +88,27 @@ test("an exception in the transform must dispatch an $$ERROR action", async () =
   await store.dispatch("throwError", { v: "value" })
 
   expect(errorTransform.mock.calls.length).toBe(1)
-
+  expect(errorCheck.message).toBe("Error")
   expect(errorState.data).toBe("data")
-  expect(errorTransformValue.message).toBe("Error")
+  expect(errorTransformValue.v).toBe("value")
 })
-test("an exception in the async must dispatch an $$ERROR action", async () => {
-  let errorTransformValue: Error = new Error("not this value")
+test("an exception in the async must be caught by an error handler", async () => {
+  let errorTransform: Error = new Error("not this value")
+  let errorTransformValue: any = {}
   let errorState: any = {}
-  const errorAsync = jest.fn(async ({ value, state }) => {
-    errorTransformValue = value
+  const errorAsync = jest.fn(async ({ value, state, error }) => {
+    errorTransform = error
     errorState = state
+    errorTransformValue = value
   })
+
   const store = createStoreBuilder().addModule(
     <ModuleDeclaration<TestState>>{
       asyncs: {
-        "throwError": async () => { throw new Error("Error") },
-        "$$ERROR": errorAsync
+        "throwError": async () => { throw new Error("Error") }
       },
-      "initialState": <TestState>{
+      error: errorAsync,
+      initialState: <TestState>{
         data: "data"
       }
     }
@@ -111,34 +117,44 @@ test("an exception in the async must dispatch an $$ERROR action", async () => {
   await store.dispatch("throwError", { v: "value" })
 
   expect(errorAsync.mock.calls.length).toBe(1)
-
+  expect(errorTransformValue.v).toBe("value")
   expect(errorState.data).toBe("data")
-  expect(errorTransformValue.message).toBe("Error")
+  expect(errorTransform.message).toBe("Error")
 
 })
+
 test("an exception in the watch must dispatch an $$ERROR action", async () => {
-  let errorTransformValue: Error = new Error("not this value")
+  let errorTransformError: Error = new Error("not this value")
   let errorState: any = {}
-  const errorTransform = jest.fn(({ value, state }) => {
-    errorTransformValue = value
+  let errorValue: any = {}
+
+  const errorTransform = jest.fn(({ value, state, error }) => {
+    errorTransformError = error
     errorState = state
+    errorValue = value
   })
   const store = createStoreBuilder().addModule(
     <ModuleDeclaration<TestState>>{
       transforms: {
-        "throwError": ({ value, state }) => {state.data = value},
-        "$$ERROR": errorTransform
-      }
+        "throwError": ({ value, state }) => { state.data = value }
+      },
+      error: errorTransform
     }
   ).build()
 
-  await store.dispatch("throwError", { v: "value" })
   store.watch(() => { throw new Error("Error") })
+  await store.dispatch("throwError", { v: "value" })
 
   expect(errorTransform.mock.calls.length).toBe(1)
-
+  expect(errorValue.v).toBe("value")
   expect(errorState.data.v).toBe("value")
-  expect(errorTransformValue.message).toBe("Error")
+  expect(errorTransformError.message).toBe("Error")
 
 })
-test("a dispatched exception must occur on the root regardless of namespace", async () => { })
+
+test("a dispatched action with root enabled must occur on the root regardless of namespace", async () => {
+  await testStore((testAsync, testTransform) => <ModuleDeclaration<TestState>>{
+    asyncs: { "test": testAsync },
+    transforms: { "test": testTransform }
+  }, ["unknown:test"], undefined, undefined, true)
+})

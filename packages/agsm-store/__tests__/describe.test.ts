@@ -3,7 +3,7 @@ import { ModuleDeclaration, createStoreBuilder } from '../src/index'
 type TestState = {
     data: any
 }
-
+/*
 test("when an error is thrown", () => {
     let errorValue: any = {}
     let errorState: any = {}
@@ -31,4 +31,4 @@ test("when an error is thrown", () => {
 
     expect(errorValue.message).toBe("Error")
     expect(errorState.data.v).toBe("value")
-})
+})*/

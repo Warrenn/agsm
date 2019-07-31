@@ -79,6 +79,6 @@ export declare type WatchCallback<T> = (context: WatchCallbackContext<T>) => voi
 
 export interface Store<T> {
     watch: (callback: WatchCallback<T>) => () => void
-    dispatch: (action: string, value: any) => void
+    dispatch: (action: string, value: any, root?: boolean) => void
     getState: (key?: string) => T
 }

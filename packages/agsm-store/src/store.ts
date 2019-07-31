@@ -50,6 +50,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
         if (declaration.transforms) concatCallbacks(_transforms, declaration.transforms)
         if (declaration.asyncs) concatCallbacks(_asyncs, declaration.asyncs)
         if (declaration.middlewares && declaration.middlewares.length > 0) _middlewares = [..._middlewares, ...declaration.middlewares]
+        if (declaration.error) _errorHandler = declaration.error
 
         const factories = declaration.factories || {}
         Object.keys(factories).map(k => _factories[`${namespace}${k}`] = factories[k])
@@ -149,7 +150,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
             _state["__"] = <T>deepCopy(rootState)
             _state[nsKey] = <T>deepCopy(state)
 
-            if (_watchers.length > 0) {
+            if (transforms.length > 0) {
                 const watchers: WatchCallback<T>[] = _watchers.slice()
                 try { watchers.map(w => w && w({ state, rootState })) }
                 catch (error) { _errorHandler({ rootState, value, state, factory, error, context }) }
