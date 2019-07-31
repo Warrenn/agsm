@@ -26,14 +26,26 @@ export interface WatchCallbackContext<T> {
     rootState: T
 }
 
+export interface ErrorContext<T> {
+    error: Error
+    state: T
+    value: any
+    context: any
+    rootState: T
+    factory: ServiceFactory
+    dispatch: DispatchCallback
+}
+
 export declare type TransformCallback<T> = (context: TransformContext<T>) => void
 export declare type AsyncCallback<T> = (context: AsyncContext<T>) => Promise<void>
 export declare type FactoryDeclaration = (config: any) => any
+export declare type ErrorDeclaration<T> = (error: ErrorContext<T>) => void
 
 export interface ModuleDeclaration<T> {
     transforms?: { [key: string]: TransformCallback<T> }
     asyncs?: { [key: string]: AsyncCallback<T> }
     factories?: { [key: string]: FactoryDeclaration }
+    error?: ErrorDeclaration<T>
     initialState?: T
 }
 
@@ -44,6 +56,7 @@ export interface StoreBuilder<T> {
     initialState: (initialState: any, namespace?: string) => StoreBuilder<T>
     addConfig: (config: any) => StoreBuilder<T>
     addFactory: (key: string, factory: FactoryDeclaration, namespace?: string) => StoreBuilder<T>
+    addErrorHandler: (handler: ErrorDeclaration<T>)=>StoreBuilder<T>
     build: () => Store<T>
 }
 
