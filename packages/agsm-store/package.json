@@ -1,6 +1,6 @@
 {
-    "name": "@busyweb/agsm-store",
-    "version": "0.0.5",
+    "name": "@warrennenslin/agsm-store",
+    "version": "0.0.1",
     "description": "",
     "main": "lib/agsm-store.js",
     "unpkg": "dist/agsm-store.js",
@@ -16,7 +16,11 @@
         "test": "jest",
         "build": "rollup -c"
     },
-    "author": "",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Warrenn/agsm.git"
+    },
+    "author": "Warrenn Enslin",
     "license": "ISC",
     "dependencies": {},
     "devDependencies": {

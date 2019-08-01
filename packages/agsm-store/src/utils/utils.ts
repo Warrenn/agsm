@@ -53,10 +53,24 @@ export function forEachValue (obj, fn) {
   Object.keys(obj).forEach(key => fn(obj[key], key))
 }
 
+/** 
+ *  @name isObject
+ *  checks if the paramter supplied is an object
+ *  
+ *  @param {any} obj - any object
+ *  @returns {any} - boolean true if an object false if not
+ */
 export function isObject (obj) {
   return obj !== null && typeof obj === 'object'
 }
 
+/**
+ *determines if the provided argument is a promise
+ *
+ * @export
+ * @param {*} val
+ * @returns
+ */
 export function isPromise (val) {
   return val && typeof val.then === 'function'
 }
