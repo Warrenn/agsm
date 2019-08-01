@@ -2,14 +2,19 @@
     "name": "@busyweb/agsm-store",
     "version": "0.0.1",
     "description": "",
-    "main": "./dist/agsm-store.esm.js",
-    "types": "./dist/agsm-store.d.ts",
+    "main": "lib/agsm-store.js",
+    "unpkg": "dist/agsm-store.js",
+    "module": "es/agsm-store.js",
+    "typings": "dist/agsm-store.d.ts",
     "files": [
-        "dist"
+        "dist",
+        "lib",
+        "es"
     ],
     "scripts": {
         "compile": "tsc",
-        "test": "jest"
+        "test": "jest",
+        "build": "rollup -c"
     },
     "author": "",
     "license": "ISC",
@@ -22,7 +27,7 @@
         "jest-fetch-mock": "^2.1.2",
         "npm-run-all": "^4.1.5",
         "rollup": "^1.17.0",
-        "rollup-plugin-dts": "^1.1.6",
+        "rollup-plugin-node-resolve": "^5.2.0",
         "rollup-plugin-terser": "^5.1.1",
         "rollup-plugin-typescript2": "^0.22.1",
         "ts-jest": "^24.0.2",
