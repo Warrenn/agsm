@@ -1,4 +1,4 @@
-import { ModuleDeclaration } from '../src'
+import { ModuleDeclaration } from '../src/index'
 
 export type AnotherState = {
     user: {
@@ -38,7 +38,7 @@ export const anotherModule = <ModuleDeclaration<AnotherState>>{
             }
         }
     ],
-    error: ({ context, value, rootState, factory, state, error }) => {
+    error: ({ error }) => {
         console.error(error.stack)
     },
     transforms: {

@@ -1,25 +1,32 @@
 {
-    "name": "agsm-store",
+    "name": "@busyweb/agsm-store",
     "version": "0.0.1",
     "description": "",
-    "main": "./src/index.ts",
-    "types": "./src/index.d.ts",
+    "main": "./dist/agsm-store.esm.js",
+    "types": "./dist/agsm-store.d.ts",
+    "files": [
+        "dist"
+    ],
     "scripts": {
         "compile": "tsc",
         "test": "jest"
     },
     "author": "",
     "license": "ISC",
-    "dependencies": {
-        "@types/node": "^12.6.8",
-        "@types/typescript": "^2.0.0"
-    },
+    "dependencies": {},
     "devDependencies": {
         "@types/jest": "^24.0.15",
-        "barrelsby": "^2.1.1",
+        "@types/node": "^12.6.8",
+        "@types/typescript": "^2.0.0",
         "jest": "^24.8.0",
         "jest-fetch-mock": "^2.1.2",
+        "npm-run-all": "^4.1.5",
+        "rollup": "^1.17.0",
+        "rollup-plugin-dts": "^1.1.6",
+        "rollup-plugin-terser": "^5.1.1",
+        "rollup-plugin-typescript2": "^0.22.1",
         "ts-jest": "^24.0.2",
+        "tslib": "^1.10.0",
         "typescript": "^3.5.3"
     },
     "jest": {

@@ -1,4 +1,4 @@
-import { ModuleDeclaration } from '../src'
+import { ModuleDeclaration } from '../src/index'
 
 export type ExampleState = {
     loading: boolean,
