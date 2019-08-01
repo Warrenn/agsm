@@ -1,11 +1,11 @@
 {
     "name": "@busyweb/agsm-store",
-    "version": "0.0.1",
+    "version": "0.0.5",
     "description": "",
     "main": "lib/agsm-store.js",
     "unpkg": "dist/agsm-store.js",
     "module": "es/agsm-store.js",
-    "typings": "dist/agsm-store.d.ts",
+    "typings": "dist/index.d.ts",
     "files": [
         "dist",
         "lib",
