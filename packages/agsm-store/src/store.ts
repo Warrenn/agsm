@@ -1,5 +1,5 @@
 import { deepCopy } from './utils/utils'
-import { StoreBuilder, AsyncCallback, FactoryDeclaration, MiddleWareChain, ErrorDeclaration, ErrorContext, MiddleWareContext, ModuleDeclaration, Store, WatchCallback, ServiceFactory, TransformContext, MiddleWareCallback, AsyncContext, TransformCallback } from './types'
+import { StoreBuilder, AsyncCallback, FactoryDeclaration, MiddleWareChain, ErrorDeclaration, ErrorContext, MiddleWareContext, ModuleDeclaration, Store, WatchCallback, ServiceFactory, TransformContext, MiddleWareCallback, AsyncContext, TransformCallback, TransformChain } from './types'
 
 export function createStoreBuilder<T>(): StoreBuilder<T> {
     const _transforms: { [key: string]: TransformCallback<T>[] } = {}
@@ -7,6 +7,9 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
     const _factories: { [key: string]: FactoryDeclaration } = {}
     const _state: { [key: string]: any } = {}
     let _middlewares: MiddleWareChain<T>[] = []
+    let _transformWraps: TransformChain<T>[] = []
+    let _config: any = {}
+
     let _errorHandler: ErrorDeclaration<T> = (context: ErrorContext<T>) => console.error(`${JSON.stringify({
         context: context.context,
         state: context.state,
@@ -18,19 +21,38 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
             stack: context.error.stack
         }
     })}`)
-    let _config: any = {}
 
     const _wrapTryCatchMiddleWare: MiddleWareChain<T> = next => async (ctx: MiddleWareContext<T>) => {
-        try { return await next(ctx) } catch (error) {
+        try { return await next(ctx) }
+        catch (error) {
             _errorHandler({
-                error: error,
+                error,
                 state: ctx.state,
                 value: ctx.value,
                 context: ctx.context,
                 rootState: ctx.rootState,
                 factory: ctx.factory,
-                action: ctx.action
+                action: ctx.action,
+                namespace: ctx.namespace
             })
+        }
+    }
+
+    function createTryCatchTransformWrap(factory: ServiceFactory): TransformChain<T> {
+        return next => (ctx: TransformContext<T>) => {
+            try { next(ctx) }
+            catch (error) {
+                _errorHandler({
+                    error,
+                    state: ctx.state,
+                    action: ctx.action,
+                    context: ctx.context,
+                    factory: factory,
+                    namespace: ctx.namespace,
+                    rootState: ctx.rootState,
+                    value: ctx.value
+                })
+            }
         }
     }
 
@@ -51,7 +73,8 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
         if (declaration.transforms) concatCallbacks(_transforms, declaration.transforms)
         if (declaration.asyncs) concatCallbacks(_asyncs, declaration.asyncs)
         if (declaration.middlewares && declaration.middlewares.length > 0) _middlewares = [..._middlewares, ...declaration.middlewares]
-        if (declaration.error) _errorHandler = declaration.error
+        if (declaration.errorHandler) _errorHandler = declaration.errorHandler
+        if (declaration.transformWraps && declaration.transformWraps.length > 0) _transformWraps = [..._transformWraps, ...declaration.transformWraps]
 
         const factories = declaration.factories || {}
         Object.keys(factories).map(k => _factories[`${namespace}${k}`] = factories[k])
@@ -61,8 +84,13 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
         return this
     }
 
+    function addTransformWrap(chain: TransformChain<T>) {
+        _transformWraps = [chain, ..._transformWraps]
+        return this
+    }
+
     function addMiddleware(chain: MiddleWareChain<T>): StoreBuilder<T> {
-        _middlewares = [..._middlewares, chain]
+        _middlewares = [chain, ..._middlewares]
         return this
     }
 
@@ -145,9 +173,16 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
             let state: T = <T>deepCopy(_state[nsKey] || {})
             let context = { config: _config }
 
+            const innerTransform: TransformCallback<T> = ctx => transforms.map(t => t && t(ctx))
+            const outerTransformWrap: TransformChain<T> = createTryCatchTransformWrap(factory)
+            const mainTransformWrap: TransformChain<T> = [outerTransformWrap, ..._transformWraps]
+                .reduce((a, b) => (...args) => a(b(...args)))
+
             const transContext = <TransformContext<T>>{ state, action, value, rootState, context, namespace }
+            mainTransformWrap(innerTransform)(transContext)
+
             try { transforms.map(t => t && t(transContext)) }
-            catch (error) { _errorHandler({ rootState, value, state, factory, error, context, action, }) }
+            catch (error) { _errorHandler({ rootState, value, state, factory, error, context, action, namespace }) }
 
             _state["__"] = <T>deepCopy(rootState)
             _state[nsKey] = <T>deepCopy(state)
@@ -155,7 +190,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
             if (transforms.length > 0) {
                 const watchers: WatchCallback<T>[] = _watchers.slice()
                 try { watchers.map(w => w && w({ state, rootState })) }
-                catch (error) { _errorHandler({ rootState, value, state, factory, error, context, action: actionNs }) }
+                catch (error) { _errorHandler({ rootState, value, state, factory, error, context, action, namespace }) }
             }
 
             const _children: { key: string, value: any, root?: boolean }[] = []
@@ -178,7 +213,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
                 await Promise.all(promises)
             }
 
-            const middlewareContext = <MiddleWareContext<T>>{ namespace, state, rootState, value, context, factory, dispatch: _dispatch, action: actionNs }
+            const middlewareContext = <MiddleWareContext<T>>{ namespace, state, rootState, value, context, factory, dispatch: _dispatch, action }
             await _mainMiddleware(innerMiddleware)(middlewareContext)
 
             for (let i = 0; i < _children.length; i++) {
@@ -215,6 +250,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
         build,
         addFactory,
         addMiddleware,
-        addErrorHandler
+        addErrorHandler,
+        addTransformWrap
     }
 }

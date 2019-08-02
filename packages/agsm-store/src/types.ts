@@ -437,7 +437,7 @@ export interface StoreBuilder<T> {
     addFactory: (key: string, factory: FactoryDeclaration, namespace?: string) => StoreBuilder<T>
     /**
      *Defines the error handling function for any error that might have bubbled up from transforms, 
-     *asyncs and watches
+     *asyncs and watches. It will override any already declared error handler
      *
      * @memberof StoreBuilder
      */
