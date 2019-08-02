@@ -1,6 +1,6 @@
 {
     "name": "@warrennenslin/agsm-store",
-    "version": "0.0.4",
+    "version": "0.0.6",
     "description": "",
     "main": "lib/agsm-store.js",
     "unpkg": "dist/agsm-store.js",
