@@ -43,5 +43,6 @@
         "preset": "rollup-jest",
         "automock": false,
         "setupFiles": []
-    }
+    },
+    "gitHead": "ee176573f276bf5800d5fb694dffb4f491fb266b"
 }
