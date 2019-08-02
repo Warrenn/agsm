@@ -1,7 +1,6 @@
-'use strict';
-
-const agsmWebworker = require('..');
+import { TestThis } from '../src/webworker'
 
 describe('@warrennenslin/agsm-webworker', () => {
+    TestThis()
     it('needs tests');
 });

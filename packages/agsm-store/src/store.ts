@@ -38,24 +38,6 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
         }
     }
 
-    function createTryCatchTransformWrap(factory: ServiceFactory): TransformChain<T> {
-        return next => (ctx: TransformContext<T>) => {
-            try { next(ctx) }
-            catch (error) {
-                _errorHandler({
-                    error,
-                    state: ctx.state,
-                    action: ctx.action,
-                    context: ctx.context,
-                    factory: factory,
-                    namespace: ctx.namespace,
-                    rootState: ctx.rootState,
-                    value: ctx.value
-                })
-            }
-        }
-    }
-
     function addModule(declaration: ModuleDeclaration<T>, namespace?: string): StoreBuilder<T> {
         if (!declaration) throw ''
         const stateKey = namespace || "__"
@@ -162,6 +144,10 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
             const transforms: TransformCallback<T>[] = [...(_transforms[actionNs] || []), ...(_transforms[allMatches] || []), ...(_transforms["*:*"] || [])] || []
             const asyncs: AsyncCallback<T>[] = [...(_asyncs[actionNs] || []), ...(_asyncs[allMatches] || []), ...(_asyncs["*:*"] || [])] || []
 
+            let rootState: T = <T>deepCopy(_state["__"] || {})
+            let state: T = <T>deepCopy(_state[nsKey] || {})
+            let context = { config: _config }
+
             const factory = <ServiceFactory>{
                 createService: (key: string) => {
                     if (namespace && _initializedServices[`${namespace}:${key}`]) return _initializedServices[`${namespace}:${key}`]
@@ -169,30 +155,40 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
                     throw `the service for ${key} could not be found`
                 }
             }
-            let rootState: T = <T>deepCopy(_state["__"] || {})
-            let state: T = <T>deepCopy(_state[nsKey] || {})
-            let context = { config: _config }
-
-            const innerTransform: TransformCallback<T> = ctx => transforms.map(t => t && t(ctx))
-            const outerTransformWrap: TransformChain<T> = createTryCatchTransformWrap(factory)
-            const mainTransformWrap: TransformChain<T> = [outerTransformWrap, ..._transformWraps]
-                .reduce((a, b) => (...args) => a(b(...args)))
-
-            const transContext = <TransformContext<T>>{ state, action, value, rootState, context, namespace }
-            mainTransformWrap(innerTransform)(transContext)
-
-            try { transforms.map(t => t && t(transContext)) }
-            catch (error) { _errorHandler({ rootState, value, state, factory, error, context, action, namespace }) }
-
-            _state["__"] = <T>deepCopy(rootState)
-            _state[nsKey] = <T>deepCopy(state)
 
             if (transforms.length > 0) {
+                const innerTransform: TransformCallback<T> = ctx => transforms.map(t => t && t(ctx))
+                const outerTransformWrap: TransformChain<T> = next => (ctx: TransformContext<T>) => {
+                    try { next(ctx) }
+                    catch (error) {
+                        _errorHandler({
+                            error,
+                            state: ctx.state,
+                            action,
+                            context: ctx.context,
+                            factory,
+                            namespace,
+                            rootState: ctx.rootState,
+                            value
+                        })
+                    }
+                }
+                const mainTransformWrap: TransformChain<T> = [outerTransformWrap, ..._transformWraps]
+                    .reduce((a, b) => (...args) => a(b(...args)))
+
+                const transContext = <TransformContext<T>>{ state, action, value, rootState, context, namespace }
+                mainTransformWrap(innerTransform)(transContext)
+
+                _state["__"] = <T>deepCopy(rootState)
+                _state[nsKey] = <T>deepCopy(state)
+
                 const watchers: WatchCallback<T>[] = _watchers.slice()
                 try { watchers.map(w => w && w({ state, rootState })) }
                 catch (error) { _errorHandler({ rootState, value, state, factory, error, context, action, namespace }) }
             }
 
+            if (asyncs.length == 0) return
+            
             const _children: { key: string, value: any, root?: boolean }[] = []
             const _dispatch = (act: string, value: any, root?: boolean) => {
                 if (root || !namespace) _children.push({ key: act, value, root })

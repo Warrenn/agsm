@@ -77,7 +77,7 @@ test("an exception in the transform must be caught by the error handler", async 
       transforms: {
         "throwError": () => { throw new Error("Error") }
       },
-      error: errorTransform,
+      errorHandler: errorTransform,
       initialState: <TestState>{
         data: "data"
       }
@@ -104,9 +104,11 @@ test("an exception in the async must be caught by an error handler", async () =>
   const store = createStoreBuilder().addModule(
     <ModuleDeclaration<TestState>>{
       asyncs: {
-        "throwError": async () => { throw new Error("Error") }
+        "throwError": async () => { 
+          throw new Error("Error") 
+        }
       },
-      error: errorAsync,
+      errorHandler: errorAsync,
       initialState: <TestState>{
         data: "data"
       }
@@ -137,7 +139,7 @@ test("an exception in the watch must dispatch to the error handler", async () =>
       transforms: {
         "throwError": ({ value, state }) => { state.data = value }
       },
-      error: errorTransform
+      errorHandler: errorTransform
     }
   ).build()
 
