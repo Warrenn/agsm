@@ -28,7 +28,8 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
                 value: ctx.value,
                 context: ctx.context,
                 rootState: ctx.rootState,
-                factory: ctx.factory
+                factory: ctx.factory,
+                action: ctx.action
             })
         }
     }
@@ -120,13 +121,14 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
             let namespace = ""
             let allMatches = "*"
             const split = actionNs.split(":")
+            const action = split[split.length - 1]
 
             if (!root && split.length > 1) {
                 namespace = split[(split.length - 2)]
                 allMatches = `${namespace}:*`
-                actionNs = `${namespace}:${split[split.length - 1]}`
+                actionNs = `${namespace}:${action}`
             }
-            if (root) actionNs = split[split.length - 1]
+            if (root) actionNs = action
 
             const nsKey = namespace || "__"
             const transforms: TransformCallback<T>[] = [...(_transforms[actionNs] || []), ...(_transforms[allMatches] || []), ...(_transforms["*:*"] || [])] || []
@@ -143,9 +145,9 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
             let state: T = <T>deepCopy(_state[nsKey] || {})
             let context = { config: _config }
 
-            const transContext = <TransformContext<T>>{ state, action: actionNs, value, rootState, context }
+            const transContext = <TransformContext<T>>{ state, action, value, rootState, context, namespace }
             try { transforms.map(t => t && t(transContext)) }
-            catch (error) { _errorHandler({ rootState, value, state, factory, error, context }) }
+            catch (error) { _errorHandler({ rootState, value, state, factory, error, context, action, }) }
 
             _state["__"] = <T>deepCopy(rootState)
             _state[nsKey] = <T>deepCopy(state)
@@ -153,7 +155,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
             if (transforms.length > 0) {
                 const watchers: WatchCallback<T>[] = _watchers.slice()
                 try { watchers.map(w => w && w({ state, rootState })) }
-                catch (error) { _errorHandler({ rootState, value, state, factory, error, context }) }
+                catch (error) { _errorHandler({ rootState, value, state, factory, error, context, action: actionNs }) }
             }
 
             const _children: { key: string, value: any, root?: boolean }[] = []

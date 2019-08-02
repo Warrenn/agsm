@@ -1,7 +1,6 @@
-import { ModuleDeclaration } from '../src/index'
-import { createStoreBuilder } from '../src/store'
+import { ModuleDeclaration, createStoreBuilder } from '../src'
 
-type TestState = {
+declare type TestState = {
   data: any
 }
 
@@ -123,7 +122,7 @@ test("an exception in the async must be caught by an error handler", async () =>
 
 })
 
-test("an exception in the watch must dispatch an $$ERROR action", async () => {
+test("an exception in the watch must dispatch to the error handler", async () => {
   let errorTransformError: Error = new Error("not this value")
   let errorState: any = {}
   let errorValue: any = {}
