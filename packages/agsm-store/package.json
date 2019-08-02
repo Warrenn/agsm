@@ -14,7 +14,8 @@
     "scripts": {
         "compile": "tsc",
         "test": "jest",
-        "build": "rollup -c"
+        "build": "rollup -c",
+        "prepublish": "npm run build"
     },
     "repository": {
         "type": "git",
