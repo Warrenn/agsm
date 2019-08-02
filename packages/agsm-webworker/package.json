@@ -21,7 +21,7 @@
     },
     "devDependencies": {
         "@babel/preset-typescript": "^7.3.3",
-        "@types/jest": "^24.0.15",
+        "@types/jest": "^24.0.16",
         "@types/node": "^12.6.8",
         "@types/typescript": "^2.0.0",
         "jest": "^24.8.0",
@@ -32,8 +32,7 @@
         "rollup-plugin-terser": "^5.1.1",
         "rollup-plugin-typescript2": "^0.22.1",
         "ts-jest": "^24.0.2",
-        "tslib": "^1.10.0",
-        "typescript": "^3.5.3"
+        "tslib": "^1.10.0"
     },
     "repository": {
         "type": "git",
@@ -54,5 +53,8 @@
         "automock": false,
         "setupFiles": []
     },
-    "homepage": "https://github.com/Warrenn/agsm#readme"
+    "homepage": "https://github.com/Warrenn/agsm#readme",
+    "dependencies": {
+        "typescript": "^3.5.3"
+    }
 }

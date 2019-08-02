@@ -59,6 +59,8 @@
         "node_modules",
         "lib",
         "dist",
+        "example",
+        "**/__tests__/*",
         "es"
     ]
 }
