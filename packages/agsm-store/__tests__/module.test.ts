@@ -38,14 +38,12 @@ test('test async transform', async () => {
     transforms: { "test": testTransform }
   }, ["test"])
 })
-
 test("* must be called for all actions", async () => {
   await testStore((testAsync, testTransform) => <ModuleDeclaration<TestState>>{
     asyncs: { "*": testAsync },
     transforms: { "*": testTransform }
   }, ["unkown"])
 })
-
 test("* must scoped to the namespace", async () => {
   await testStore((testAsync, testTransform) => <ModuleDeclaration<TestState>>{
     asyncs: { "*": testAsync },
@@ -75,7 +73,10 @@ test("an exception in the transform must be caught by the error handler", async 
   const store = createStoreBuilder().addModule(
     <ModuleDeclaration<TestState>>{
       transforms: {
-        "throwError": () => { throw new Error("Error") }
+        "throwError": ({ state }) => {
+          console.log(state)
+          throw new Error("Error")
+        }
       },
       errorHandler: errorTransform,
       initialState: <TestState>{
@@ -104,8 +105,8 @@ test("an exception in the async must be caught by an error handler", async () =>
   const store = createStoreBuilder().addModule(
     <ModuleDeclaration<TestState>>{
       asyncs: {
-        "throwError": async () => { 
-          throw new Error("Error") 
+        "throwError": async () => {
+          throw new Error("Error")
         }
       },
       errorHandler: errorAsync,
@@ -158,4 +159,34 @@ test("a dispatched action with root enabled must occur on the root regardless of
     asyncs: { "test": testAsync },
     transforms: { "test": testTransform }
   }, ["unknown:test"], undefined, undefined, true)
+})
+
+test("a watch must not be able to change the state", async () => {
+  const testModule: ModuleDeclaration<TestState> = <ModuleDeclaration<TestState>>{
+    initialState: { data: { a: 123 } },
+    transforms: { "test": () => { } }
+  }
+  const store = createStoreBuilder<TestState>().addModule(testModule).build()
+  const watchFn = jest.fn(({ state }) => (<TestState>state).data.a = 4321)
+  store.watch(watchFn)
+  await store.dispatch("test", {})
+  const after = store.getState()
+
+  expect(watchFn.mock.calls.length).toBe(1)
+  expect(after.data.a).toBe(123)
+})
+
+
+test("an async must not be able to change the state", async () => {
+  const asyncFn = jest.fn(async ({ state }) => { (<TestState>state).data.a = 4321 })
+  const testModule: ModuleDeclaration<TestState> = <ModuleDeclaration<TestState>>{
+    initialState: { data: { a: 123 } },
+    asyncs: { "test": asyncFn }
+  }
+  const store = createStoreBuilder<TestState>().addModule(testModule).build()
+  await store.dispatch("test", {})
+  const after = store.getState()
+
+  expect(asyncFn.mock.calls.length).toBe(1)
+  expect(after.data.a).toBe(123)
 })

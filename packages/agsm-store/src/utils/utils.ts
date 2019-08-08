@@ -6,7 +6,7 @@
  * @param {Function} f
  * @return {*}
  */
-export function find (list, f) {
+export function find(list, f) {
   return list.filter(f)[0]
 }
 
@@ -19,7 +19,7 @@ export function find (list, f) {
  * @param {Array<Object>} cache
  * @return {*}
  */
-export function deepCopy (obj, cache: any[] = []) {
+export function deepCopy(obj, readonly: boolean = false, cache: any[] = []) {
   // just return if obj is immutable value
   if (obj === null || typeof obj !== 'object') {
     return obj
@@ -40,83 +40,9 @@ export function deepCopy (obj, cache: any[] = []) {
   })
 
   Object.keys(obj).forEach(key => {
-    copy[key] = deepCopy(obj[key], cache)
+    if (readonly) Object.defineProperty(copy, key, { get: () => deepCopy(obj[key], readonly, cache), enumerable: true })
+    else copy[key] = deepCopy(obj[key], readonly, cache)
   })
 
   return copy
-}
-
-/**
- * forEach for object
- */
-export function forEachValue (obj, fn) {
-  Object.keys(obj).forEach(key => fn(obj[key], key))
-}
-
-/** 
- *  @name isObject
- *  checks if the paramter supplied is an object
- *  
- *  @param {any} obj - any object
- *  @returns {any} - boolean true if an object false if not
- */
-export function isObject (obj) {
-  return obj !== null && typeof obj === 'object'
-}
-
-/**
- *determines if the provided argument is a promise
- *
- * @export
- * @param {*} val
- * @returns
- */
-export function isPromise (val) {
-  return val && typeof val.then === 'function'
-}
-
-export function assert (condition, msg) {
-  if (!condition) throw new Error(`[vuex] ${msg}`)
-}
-
-export function partial (fn, arg) {
-  return function () {
-    return fn(arg)
-  }
-}
-
-const hasOwn = Object.prototype.hasOwnProperty
-
-function is(x, y) {
-    if (x === y) {
-        return x !== 0 || y !== 0 || 1 / x === 1 / y
-    } else {
-        return x !== x && y !== y
-    }
-}
-
-export default function shallowEqual(objA, objB) {
-    if (is(objA, objB)) return true
-
-    if (
-        typeof objA !== 'object' ||
-        objA === null ||
-        typeof objB !== 'object' ||
-        objB === null
-    ) {
-        return false
-    }
-
-    const keysA = Object.keys(objA)
-    const keysB = Object.keys(objB)
-
-    if (keysA.length !== keysB.length) return false
-
-    for (let i = 0; i < keysA.length; i++) {
-        if (!hasOwn.call(objB, keysA[i]) || !is(objA[keysA[i]], objB[keysA[i]])) {
-            return false
-        }
-    }
-
-    return true
 }

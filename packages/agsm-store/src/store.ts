@@ -1,11 +1,11 @@
 import { deepCopy } from './utils/utils'
-import { StoreBuilder, AsyncCallback, FactoryDeclaration, MiddleWareChain, ErrorDeclaration, ErrorContext, MiddleWareContext, ModuleDeclaration, Store, WatchCallback, ServiceFactory, TransformContext, MiddleWareCallback, AsyncContext, TransformCallback, TransformChain } from './types'
+import { StoreBuilder, AsyncCallback, FactoryDeclaration, MiddleWareChain, ErrorDeclaration, ErrorContext, MiddleWareContext, ModuleDeclaration, Store, WatchCallback, ServiceFactory, TransformContext, MiddleWareCallback, AsyncContext, TransformCallback, TransformChain, GlobalState } from './types'
 
 export function createStoreBuilder<T>(): StoreBuilder<T> {
     const _transforms: { [key: string]: TransformCallback<T>[] } = {}
     const _asyncs: { [key: string]: AsyncCallback<T>[] } = {}
     const _factories: { [key: string]: FactoryDeclaration } = {}
-    const _state: { [key: string]: any } = {}
+    const _state: GlobalState<T> = {}
     let _middlewares: MiddleWareChain<T>[] = []
     let _transformWraps: TransformChain<T>[] = []
     let _config: any = {}
@@ -13,7 +13,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
     let _errorHandler: ErrorDeclaration<T> = (context: ErrorContext<T>) => console.error(`${JSON.stringify({
         context: context.context,
         state: context.state,
-        rootState: context.rootState,
+        rootState: context.globalState,
         value: context.value,
         error: {
             name: context.error.name,
@@ -30,7 +30,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
                 state: ctx.state,
                 value: ctx.value,
                 context: ctx.context,
-                rootState: ctx.rootState,
+                globalState: ctx.globalState,
                 factory: ctx.factory,
                 action: ctx.action,
                 namespace: ctx.namespace
@@ -61,7 +61,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
         const factories = declaration.factories || {}
         Object.keys(factories).map(k => _factories[`${namespace}${k}`] = factories[k])
 
-        _state[stateKey] = { ...(_state[stateKey] || {}), ...declaration.initialState }
+        _state[stateKey] = deepCopy({ ...(_state[stateKey]), ...declaration.initialState }, true)
 
         return this
     }
@@ -92,7 +92,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
 
     function initialState(initialState: any, namespace?: string): StoreBuilder<T> {
         const nsKey = namespace || "__"
-        _state[nsKey] = { ..._state[nsKey], ...initialState }
+        _state[nsKey] = deepCopy({ ..._state[nsKey], ...initialState }, true)
         return this
     }
 
@@ -120,9 +120,9 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
 
         Object.keys(_factories).map(k => _initializedServices[k] = _factories[k](_config))
 
-        function getState<T>(key?: string) {
+        function getState(key?: string): T {
             key = key || "__"
-            return <T>_state[key]
+            return _state[key]
         }
 
         async function dispatch(actionNs: string, value: any, root?: boolean): Promise<void> {
@@ -144,9 +144,11 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
             const transforms: TransformCallback<T>[] = [...(_transforms[actionNs] || []), ...(_transforms[allMatches] || []), ...(_transforms["*:*"] || [])] || []
             const asyncs: AsyncCallback<T>[] = [...(_asyncs[actionNs] || []), ...(_asyncs[allMatches] || []), ...(_asyncs["*:*"] || [])] || []
 
-            let rootState: T = <T>deepCopy(_state["__"] || {})
-            let state: T = <T>deepCopy(_state[nsKey] || {})
-            let context = { config: _config }
+            if (transforms.length == 0 && asyncs.length == 0) return
+
+            const globalState: GlobalState<T> = deepCopy(_state || {})
+            const state: T = globalState[nsKey] || <T>{}
+            const context = { config: _config }
 
             const factory = <ServiceFactory>{
                 createService: (key: string) => {
@@ -159,7 +161,9 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
             if (transforms.length > 0) {
                 const innerTransform: TransformCallback<T> = ctx => transforms.map(t => t && t(ctx))
                 const outerTransformWrap: TransformChain<T> = next => (ctx: TransformContext<T>) => {
-                    try { next(ctx) }
+                    try {
+                        next(ctx)
+                    }
                     catch (error) {
                         _errorHandler({
                             error,
@@ -168,27 +172,32 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
                             context: ctx.context,
                             factory,
                             namespace,
-                            rootState: ctx.rootState,
+                            globalState: ctx.globalState,
                             value
                         })
                     }
                 }
+
                 const mainTransformWrap: TransformChain<T> = [outerTransformWrap, ..._transformWraps]
                     .reduce((a, b) => (...args) => a(b(...args)))
 
-                const transContext = <TransformContext<T>>{ state, action, value, rootState, context, namespace }
+                const transContext = <TransformContext<T>>{ state, action, value, globalState, context, namespace }
                 mainTransformWrap(innerTransform)(transContext)
 
-                _state["__"] = <T>deepCopy(rootState)
-                _state[nsKey] = <T>deepCopy(state)
+                Object.keys(_state).map(k => _state[k] = <T>deepCopy(globalState[k] || {}), true)
+                _state[nsKey] = deepCopy(state, true)
 
                 const watchers: WatchCallback<T>[] = _watchers.slice()
-                try { watchers.map(w => w && w({ state, rootState })) }
-                catch (error) { _errorHandler({ rootState, value, state, factory, error, context, action, namespace }) }
+                try {
+                    watchers.map(w => w && w({ state: _state[nsKey], globalState: _state }))
+                }
+                catch (error) {
+                    _errorHandler({ globalState: _state, value, state: _state[nsKey], factory, error, context, action, namespace })
+                }
             }
 
             if (asyncs.length == 0) return
-            
+
             const _children: { key: string, value: any, root?: boolean }[] = []
             const _dispatch = (act: string, value: any, root?: boolean) => {
                 if (root || !namespace) _children.push({ key: act, value, root })
@@ -196,20 +205,21 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
             }
 
             const innerMiddleware: MiddleWareCallback<T> = async context => {
-                const asyncContext = <AsyncContext<T>>{
-                    action: context.action,
-                    state: context.state,
-                    value: context.value,
-                    context: context.context,
-                    rootState: context.rootState,
-                    factory: context.factory,
-                    dispatch: context.dispatch
-                }
-                const promises = asyncs.filter(m => !!m).map(m => m(asyncContext))
+                const promises = asyncs
+                    .filter(a => !!a)
+                    .map(a => a(<AsyncContext<T>>{
+                        action: context.action,
+                        state: _state[nsKey],
+                        value: context.value,
+                        context: context.context,
+                        globalState: _state,
+                        factory: context.factory,
+                        dispatch: context.dispatch
+                    }))
                 await Promise.all(promises)
             }
 
-            const middlewareContext = <MiddleWareContext<T>>{ namespace, state, rootState, value, context, factory, dispatch: _dispatch, action }
+            const middlewareContext = <MiddleWareContext<T>>{ namespace, state, globalState: globalState, value, context, factory, dispatch: _dispatch, action }
             await _mainMiddleware(innerMiddleware)(middlewareContext)
 
             for (let i = 0; i < _children.length; i++) {

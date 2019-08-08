@@ -40,7 +40,7 @@ export interface TransformContext<T> {
      * @type {*}
      * @memberof TransformContext
      */
-    rootState: any
+    globalState: any
     /**
      *Volitile context data that will be passed to each transform and then onto the asyncs
      *
@@ -87,6 +87,13 @@ export interface AsyncContext<T> {
      */
     action: string
     /**
+    *The current namespace that the store is currently scoped to
+    *
+    * @type {string}
+    * @memberof ErrorContext
+    */
+    namespace: string
+    /**
      *Current state of the store scoped to the current namespace
      *
      * @type {T}
@@ -108,12 +115,12 @@ export interface AsyncContext<T> {
      */
     context: any
     /**
-     *State of the store root which is state that is agnostic to the namespace
+     *Global state of the store which includes all namespaces regardless of the current namespace scope
      *
-     * @type {T}
+     * @type {GlobalState<T>}
      * @memberof AsyncContext
      */
-    rootState: T
+    globalState: GlobalState<T>
     /**
      *Factory to return created service instances identified by key
      *
@@ -167,12 +174,12 @@ export interface MiddleWareContext<T> {
      */
     context: any
     /**
-     *State of the store root which is state that is agnostic to the namespace
+     *Global state of the store for all namespaces regardless of the currently scoped namespace
      *
-     * @type {T}
+     * @type {GlobalState<T>}
      * @memberof MiddleWareContext
      */
-    rootState: T
+    globalState: GlobalState<T>
     /**
      *The namespace is the scope under which all transforms and async functions are executing
      *
@@ -212,12 +219,12 @@ export interface WatchCallbackContext<T> {
      */
     state: T
     /**
-     *The root state of the store agnostic to namespace
+     *The global state of the store including all namespace scopes
      *
-     * @type {T}
+     * @type {GlobalState<T>}
      * @memberof WatchCallbackContext
      */
-    rootState: T
+    globalState: GlobalState<T>
 }
 
 /**
@@ -273,10 +280,10 @@ export interface ErrorContext<T> {
     /**
      *Root state of the store agnostice to namespace
      *
-     * @type {T}
+     * @type {GlobalState<T>}
      * @memberof ErrorContext
      */
-    rootState: T
+    globalState: GlobalState<T>
     /**
      *Factory to return service instance corresponding to given key
      *
@@ -293,6 +300,7 @@ export declare type TransformCallback<T> = (context: TransformContext<T>) => voi
 export declare type AsyncCallback<T> = (context: AsyncContext<T>) => Promise<void>
 export declare type FactoryDeclaration = (config: any) => any
 export declare type ErrorDeclaration<T> = (error: ErrorContext<T>) => void
+export declare type GlobalState<T> = { [namespace: string]: T }
 
 /**
  *Module declaration for a state type including transforms,asyncs,factories,middlewares,transformWraps,errorhandler 
