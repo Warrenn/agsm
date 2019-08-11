@@ -60,8 +60,9 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
 
         const factories = declaration.factories || {}
         Object.keys(factories).map(k => _factories[`${namespace}${k}`] = factories[k])
+        const clone = Object.assign(_state[stateKey] || {}, declaration.initialState || {})
 
-        _state[stateKey] = deepCopy({ ...(_state[stateKey]), ...declaration.initialState }, true)
+        _state[stateKey] = deepCopy(clone, true)
 
         return this
     }
@@ -92,12 +93,13 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
 
     function initialState(initialState: any, namespace?: string): StoreBuilder<T> {
         const nsKey = namespace || "__"
-        _state[nsKey] = deepCopy({ ..._state[nsKey], ...initialState }, true)
+        const clone = Object.assign(_state[nsKey] || {}, initialState || {})
+        _state[nsKey] = deepCopy(clone, true)
         return this
     }
 
     function addConfig(config: any): StoreBuilder<T> {
-        _config = { ..._config, ...config }
+        _config = Object.assign(_config || {}, config || {})
         return this
     }
 
