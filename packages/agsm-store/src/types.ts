@@ -484,7 +484,7 @@ export interface Store<T> {
      *
      * @memberof Store
      */
-    dispatch: (action: string, value: any, root?: boolean) => void
+    dispatch: (action: string, value: any, root?: boolean) => Promise<void>
     /**
      *Returns the state of the store currently. It can be used to get the state of the store for a given 
      *namespace by default it will return the root state
