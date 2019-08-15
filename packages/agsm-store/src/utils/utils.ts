@@ -25,6 +25,10 @@ export function deepCopy(obj, readonly: boolean = false, cache: any[] = []) {
     return obj
   }
 
+  if (obj.constructor.name === "Date") {
+    return new Date(obj.getTime())
+  }
+
   // if obj is hit, it is in circular structure
   const hit = find(cache, c => c.original === obj)
   if (hit) {
