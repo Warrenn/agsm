@@ -60,9 +60,9 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
 
         const factories = declaration.factories || {}
         Object.keys(factories).map(k => _factories[`${namespace}${k}`] = factories[k])
-        const clone = Object.assign(deepCopy(_state[stateKey] || {}, false, []), declaration.initialState || {})
+        const clone = Object.assign(deepCopy(_state[stateKey] || {}), declaration.initialState || {})
 
-        _state[stateKey] = deepCopy(clone, true, [])
+        _state[stateKey] = deepCopy(clone, true)
 
         return this
     }
@@ -93,8 +93,8 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
 
     function initialState(initialState: any, namespace?: string): StoreBuilder<T> {
         const nsKey = namespace || "__"
-        const clone = Object.assign(deepCopy(_state[nsKey] || {}, false, []), initialState || {})
-        _state[nsKey] = deepCopy(clone, true, [])
+        const clone = Object.assign(deepCopy(_state[nsKey] || {}), initialState || {})
+        _state[nsKey] = deepCopy(clone, true)
         return this
     }
 
@@ -148,7 +148,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
 
             if (transforms.length == 0 && asyncs.length == 0) return
 
-            const globalState: GlobalState<T> = deepCopy(_state || {}, false, [])
+            const globalState: GlobalState<T> = deepCopy(_state || {})
             const state: T = globalState[nsKey] || <T>{}
             const context = { config: _config }
 
@@ -186,8 +186,8 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
                 const transContext = <TransformContext<T>>{ state, action, value, globalState, context, namespace }
                 mainTransformWrap(innerTransform)(transContext)
 
-                Object.keys(_state).map(k => _state[k] = <T>deepCopy(globalState[k] || {}, false, []), true)
-                _state[nsKey] = deepCopy(state, true, [])
+                Object.keys(_state).map(k => _state[k] = <T>deepCopy(globalState[k] || {}), true)
+                _state[nsKey] = deepCopy(state, true)
 
                 const watchers: WatchCallback<T>[] = _watchers.slice()
                 try {
