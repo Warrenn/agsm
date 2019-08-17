@@ -1,6 +1,6 @@
 {
     "name": "@warrennenslin/agsm-stenciljs",
-    "version": "0.0.14",
+    "version": "0.0.15",
     "description": "stencil wrappings for agsm",
     "author": "Warrenn Enslin <warrennenslin@Warrenns-MacBook-Pro.local>",
     "homepage": "https://github.com/Warrenn/agsm#readme",
