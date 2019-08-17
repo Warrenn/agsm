@@ -20,8 +20,6 @@ export function find(list, f) {
  * @return {*}
  */
 export function deepCopy(obj, readonly: boolean, cache: any[]) {
-  if (!readonly) readonly = false
-  if (!cache) cache = []
   // just return if obj is immutable value
   if (obj === null || typeof obj !== 'object') {
     return obj
