@@ -186,7 +186,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
                 const transContext = <TransformContext<T>>{ state, action, value, globalState, context, namespace }
                 mainTransformWrap(innerTransform)(transContext)
 
-                Object.keys(_state).map(k => _state[k] = <T>deepCopy(globalState[k] || {}), true)
+                Object.keys(_state).map(k => _state[k] = <T>deepCopy(globalState[k] || {}, true))
                 _state[nsKey] = deepCopy(state, true)
 
                 const watchers: WatchCallback<T>[] = _watchers.slice()
