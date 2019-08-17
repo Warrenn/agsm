@@ -19,7 +19,9 @@ export function find(list, f) {
  * @param {Array<Object>} cache
  * @return {*}
  */
-export function deepCopy(obj, readonly: boolean = false, cache: any[] = []) {
+export function deepCopy(obj, readonly: boolean, cache: any[]) {
+  if (!readonly) readonly = false
+  if (!cache) cache = []
   // just return if obj is immutable value
   if (obj === null || typeof obj !== 'object') {
     return obj
