@@ -152,7 +152,7 @@ export function createStoreBuilder<T>(): StoreBuilder<T> {
             const state: T = globalState[nsKey] || <T>{}
             const context = { config: _config }
 
-            const factory = <ServiceFactory>{
+            const factory = <ServiceFactory> {
                 createService: (key: string) => {
                     if (namespace && _initializedServices[`${namespace}:${key}`]) return _initializedServices[`${namespace}:${key}`]
                     if (_initializedServices[`${key}`]) return _initializedServices[`${key}`]
